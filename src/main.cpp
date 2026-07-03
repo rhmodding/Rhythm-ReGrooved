@@ -1,17 +1,23 @@
 #include "hk/gfx/DebugRenderer.h"
-#include "hk/hook/InstrUtil.h"
 #include "hk/hook/Trampoline.h"
-#include "hk/ro/RoUtil.h"
-#include "hk/svc/api.h"
 
-#include "nn/fs.h"
-#include "hk/nvn/nvn_CppMethods.h"
+#include "lua.h"
+#include "lauxlib.h"
 
-HkTrampoline sdFileCreate = [](TrampolineStatic(), void* a1) -> void {
+#include "nvn/nvn_Cpp.h"
+
+lua_State* gLua = nullptr;
+
+const char* a = 
+    "function a()\n"
+    "   log(\"shit\")"
+    "end"
+;
+
+HkTrampoline gameInit = [](TrampolineStatic(), void* a1) -> void {
     orig(a1);
-    nn::fs::MountSdCard("sd");
-
-    nn::fs::CreateFile("sd://Hi_there.txt", 0);
+    
+    gLua = luaL_newstate();
 
 };
 
@@ -58,14 +64,21 @@ void renderHook(someRenderClass* _this) {
 
 }
 
-
+HkTrampoline cueTestHook = [](TrampolineStatic(), void* self, void* seq) -> void {
+    orig(self, seq);
+    
+};
 
 extern "C" void hkMain() {
-    sdFileCreate.installAtMainOffset(0x50cba0); // GameRun::GameRun(GameRun*)
+
+
+    gameInit.installAtMainOffset(0x50cba0); // GameRun::GameRun(GameRun*)
     // LMS_GetTextHook.installAtMainOffset(0x4f0ce0); // LMS_GetText
-    
+
     // this breaks
-    // hk::hook::writeBranchLinkAtMainOffset(0x510b6c, &renderHook); // NXGraphicsImpl::FUN_7100510af0(NXGraphicsImpl*)
+    // hk::hook::writeBranchLink(hk::ro::getMainModule(), 0x510b6c, &renderHook);
+
+    cueTestHook.installAtMainOffset(0x42bf80);
 
     hk::gfx::DebugRenderer::instance()->installHooks();
 }

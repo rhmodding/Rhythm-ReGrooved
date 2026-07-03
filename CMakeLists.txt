@@ -6,12 +6,20 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(config/config.cmake)
 
+# main executable
 file(GLOB_RECURSE SOURCES_ASM ${PROJECT_SOURCE_DIR}/src/*.S)
 file(GLOB_RECURSE SOURCES_C ${PROJECT_SOURCE_DIR}/src/*.c)
 file(GLOB_RECURSE SOURCES_CXX ${PROJECT_SOURCE_DIR}/src/*.cpp)
 set(SOURCES ${SOURCES_ASM} ${SOURCES_C} ${SOURCES_CXX})
 add_executable(${PROJECT_NAME} ${SOURCES})
+
+# lua
+file(GLOB LUA_SOURCES_C ${PROJECT_SOURCE_DIR}/lib/lua/*.c)
+add_library(lua STATIC ${LUA_SOURCES_C})
+target_link_libraries(${PROJECT_NAME} PRIVATE lua)
+
 include_directories(lib/nnheaders/include)
+include_directories(lua PUBLIC lib/lua)
 
 include(sys/cmake/module.cmake)
 include(sys/cmake/deploy.cmake)
