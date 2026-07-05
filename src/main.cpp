@@ -1,28 +1,43 @@
 #include "hk/gfx/DebugRenderer.h"
 #include "hk/hook/Trampoline.h"
 
+extern "C"{
 #include "lua.h"
 #include "lauxlib.h"
+}
+
+// TODO: figure out better solution
+FILE* const stdin = NULL;
 
 #include "nvn/nvn_Cpp.h"
 
 lua_State* gLua = nullptr;
 
-const char* a = 
-    "function a()\n"
-    "   log(\"shit\")"
-    "end"
-;
+
+static int lua_log(lua_State *L) {
+    int n = lua_gettop(L);
+
+    if (n != 1 || !lua_isstring(L, 1))
+        lua_error(L);
+
+    const char* data = lua_tostring(L, 1);
+    
+    hk::svc::OutputDebugString(data, strlen(data)+1);
+    hk::svc::OutputDebugString("\n", 2);
+
+    return 0;
+}
 
 HkTrampoline gameInit = [](TrampolineStatic(), void* a1) -> void {
     orig(a1);
     
-    gLua = luaL_newstate();
+    gLua = lua_newstate(luaL_alloc, NULL, 0x5417);
 
+    lua_register(gLua, "log", lua_log);
 };
 
 HkTrampoline LMS_GetTextHook = [](TrampolineStatic(), void* a1, int a2) -> int {
-    return orig(a1, 5);
+    return orig(a1, gLua ? 5 : 4);
 };
 
 struct someRenderClass {
@@ -64,21 +79,27 @@ void renderHook(someRenderClass* _this) {
 
 }
 
+const char* a = 
+    "function a()\n"
+    "   log(\"shit\")"
+    "end"
+;
+
 HkTrampoline cueTestHook = [](TrampolineStatic(), void* self, void* seq) -> void {
     orig(self, seq);
     
+    luaL_loadbuffer(gLua, a, strlen(a)+1, "_main");
+    lua_pcall(gLua, 0, 0, 0);
 };
 
 extern "C" void hkMain() {
-
-
     gameInit.installAtMainOffset(0x50cba0); // GameRun::GameRun(GameRun*)
-    // LMS_GetTextHook.installAtMainOffset(0x4f0ce0); // LMS_GetText
+    LMS_GetTextHook.installAtMainOffset(0x4f0ce0); // LMS_GetText
 
     // this breaks
     // hk::hook::writeBranchLink(hk::ro::getMainModule(), 0x510b6c, &renderHook);
 
-    cueTestHook.installAtMainOffset(0x42bf80);
+    cueTestHook.installAtMainOffset(0x42c0c0);
 
     hk::gfx::DebugRenderer::instance()->installHooks();
 }
