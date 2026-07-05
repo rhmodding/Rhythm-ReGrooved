@@ -61,11 +61,11 @@ void renderHook(someRenderClass* _this) {
 
 
 extern "C" void hkMain() {
-
-
-    sdFileCreate.installAtMainOffset(0x50c9c0);
-   // LMS_GetTextHook.installAtMainOffset(0x4f0ba0);
-    hk::hook::writeBranchLink(hk::ro::getMainModule(), 0x51098c, &renderHook);
+    sdFileCreate.installAtMainOffset(0x50cba0); // GameRun::GameRun(GameRun*)
+    // LMS_GetTextHook.installAtMainOffset(0x4f0ce0); // LMS_GetText
+    
+    // this breaks
+    // hk::hook::writeBranchLinkAtMainOffset(0x510b6c, &renderHook); // NXGraphicsImpl::FUN_7100510af0(NXGraphicsImpl*)
 
     hk::gfx::DebugRenderer::instance()->installHooks();
 }
