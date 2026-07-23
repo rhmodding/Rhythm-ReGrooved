@@ -12,6 +12,7 @@ file(GLOB_RECURSE SOURCES_C ${PROJECT_SOURCE_DIR}/src/*.c)
 file(GLOB_RECURSE SOURCES_CXX ${PROJECT_SOURCE_DIR}/src/*.cpp)
 set(SOURCES ${SOURCES_ASM} ${SOURCES_C} ${SOURCES_CXX})
 add_executable(${PROJECT_NAME} ${SOURCES})
+include_directories(include)
 
 # lua
 file(GLOB LUA_SOURCES_C ${PROJECT_SOURCE_DIR}/lib/lua/*.c)

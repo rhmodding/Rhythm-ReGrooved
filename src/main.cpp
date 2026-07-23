@@ -1,15 +1,16 @@
 #include "hk/gfx/DebugRenderer.h"
 #include "hk/hook/Trampoline.h"
+#include "nvn/nvn_Cpp.h"
 
 extern "C"{
 #include "lua.h"
 #include "lauxlib.h"
 }
 
-// TODO: figure out better solution
-FILE* const stdin = NULL;
+#include "aloha.hpp"
 
-#include "nvn/nvn_Cpp.h"
+// this definition of stdin should never be used but lua requires it
+FILE* const stdin = NULL;
 
 lua_State* gLua = nullptr;
 
@@ -84,7 +85,6 @@ const char* a = R"(
 function a()
     log("shit")
 end
-log("fuck")
 )";
 
 HkTrampoline cueTestHook = [](TrampolineStatic(), void* self, void* seq) -> void {
@@ -94,17 +94,25 @@ HkTrampoline cueTestHook = [](TrampolineStatic(), void* self, void* seq) -> void
     lua_pcall(gLua, 0, 0, 0);
 
     orig(self, seq);
+}; 
+
+HkTrampoline stageHook = [](TrampolineStatic(), unsigned int stageId, long arg1, int arg2, int arg3, int arg4, int arg5, int arg6) -> Stage* {
+    if (stageId == 0x3d)
+        return new StageRing00(arg1, arg2, arg3, arg4, arg5, arg6);
+    else
+        return orig(stageId, arg1, arg2, arg3, arg4, arg5, arg6);
 };
 
 extern "C" void hkMain() {
-    gameInit.installAtMainOffset(0x50cba0); // GameRun::GameRun(GameRun*)
+    gameInit.installAtSym<"_ZN7GameRunC2Ev">();
     //LMS_GetTextHook.installAtMainOffset(0x4f0ce0); // LMS_GetText
 
     hk::hook::writeBranchLink(hk::ro::getMainModule(), 0x510b6c, &renderHook);
 
     cueTestHook.installAtMainOffset(0x42c0c0);
 
+    stageHook.installAtSym<"_ZN12StageFactory6createEjliiiii">();
+
     hk::gfx::DebugRenderer::instance()->installHooks();
 }
-
 
