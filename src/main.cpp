@@ -62,7 +62,7 @@ void renderHook(someRenderClass* _this) {
     renderer->clear();
     renderer->begin(_this->commandBuffer);
 
-    renderer->setGlyphSize(1);
+    renderer->setGlyphSize(0.25);
 
     renderer->drawQuad(
         { { 30, 30 }, { 0, 0 }, 0xef000000 },
